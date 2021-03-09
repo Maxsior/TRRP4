@@ -3,7 +3,7 @@ import requests
 import click
 from mimetypes import guess_type
 
-HOST = os.getenv('SERVER_HOST') or 'http://localhost:3000'
+HOST = os.getenv('SERVER_HOST') or 'http://localhost:5000'
 
 
 @click.command()
@@ -18,8 +18,9 @@ def upload(file):
         with open(file, 'rb') as file:
             click.echo('uploading...')
             r = requests.post(HOST, files={'image': file})
-            print(r.raw())  # TODO что возвращается?
-    except OSError:
+            print(r)  # TODO что возвращается?
+    except FileNotFoundError as e:
+        print(e)
         click.echo('File does not exist or not accessible')
 
 
