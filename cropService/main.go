@@ -91,7 +91,7 @@ func main(){
 
 	fmt.Println("Server is listening at " + address)
 	mux := http.NewServeMux()
-	mux.HandleFunc("/crop", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		cropImage(w, r)
 	})
 
