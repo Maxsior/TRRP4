@@ -1,10 +1,22 @@
 import cv2
+import requests
 from flask import Flask, request
 from mimetypes import guess_type
+from importlib import import_module
 from time import time_ns
 import os
+import faces_pb2
+import base64
 
 app = Flask(__name__)
+
+
+def deserialize(message, typ):
+    module_, class_ = typ.rsplit('.', 1)
+    class_ = getattr(import_module(module_), class_)
+    rv = class_()
+    rv.ParseFromString(message)
+    return rv
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -26,13 +38,24 @@ def upload_image():
     image.save(fname)
 
     faces = []
-    for (x, y, w, h) in detect_faces(fname):
-        # TODO send faces via protobuf
-        faces.append(...)
+    with open(fname, 'rb') as image:
+        img = image.read()
+        img = bytes(img)
+
+        for (x, y, w, h) in detect_faces(fname):
+            p1 = faces_pb2.Point(x=x, y=y)
+            p2 = faces_pb2.Point(x=x+w, y=y+h)
+            req = faces_pb2.Crop(image=img, topLeft=p1, bottomRight=p2)
+            req = req.SerializeToString()
+
+            response = requests.post(os.getenv('TRRP4_CROP_ADDR'), data=req)
+
+            face = deserialize(response.content, 'faces_pb2.Answer')
+            faces.append(base64.b64encode(face.image).decode('ascii'))
 
     os.remove(fname)
 
-    return { 'faces': faces }
+    return {'faces': faces}
 
 
 def detect_faces(fname):
